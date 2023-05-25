@@ -8,3 +8,6 @@
 Tested on :
 - Android 12
 - IOS 14
+
+
+Download APK <a src="https://drive.google.com/file/d/17D1924sWgyrbCyGthkdbwkuOtg7poIQs/view?usp=share_link">Here</a>
