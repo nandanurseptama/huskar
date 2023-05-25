@@ -1,15 +1,93 @@
 import 'package:flutter/material.dart';
 import 'package:huskar/cores/configs/theme.dart';
 import 'package:huskar/cores/constants/assets_path.dart';
+import 'package:huskar/cores/utils/dialogs.dart';
+import 'package:huskar/cores/utils/register_listener_fn.dart';
+import 'package:huskar/cores/utils/snackbar.dart';
+import 'package:huskar/features/auth/presentation/states/auth_state.dart';
+import 'package:huskar/features/auth/presentation/states/login_state.dart';
+import 'package:huskar/ui/home_screen/home_screen.dart';
+import 'package:huskar/ui/register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final LoginState loginState;
+  final String? Function(String? value) emailValidator, passwordValidator;
+
+  final void Function(String email, String password) onLogin;
+
+  final RegisterListenerFn<LoginState> registerLoginStateListener;
+  final RegisterListenerFn<AuthState> registerAuthStateListener;
+
+  static String routeName = "/auth/login";
+
+  const LoginScreen(
+      {super.key,
+      required this.loginState,
+      required this.onLogin,
+      required this.passwordValidator,
+      required this.emailValidator,
+      required this.registerLoginStateListener,
+      required this.registerAuthStateListener});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final GlobalKey<FormState> _formKey = GlobalKey();
+  final FocusNode _passwordFieldFocusNode = FocusNode(),
+      _emailFieldFocusNode = FocusNode();
+  final TextEditingController _passwordFieldController =
+          TextEditingController(),
+      _emailFieldController = TextEditingController();
+  final ValueNotifier<bool> _isPasswordShown = ValueNotifier(false);
+  @override
+  void initState() {
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      widget.registerLoginStateListener(registerLoginStateListener);
+      widget.registerAuthStateListener(registerAuthStateListener);
+    });
+    super.initState();
+  }
+
+  void registerLoginStateListener(LoginState state) {
+    return state.maybeMap<void>(
+      fail: (value) {
+        showErrorDialog(
+            context: context,
+            processId: value.failure.processId,
+            message: value.failure.message);
+        return;
+      },
+      processing: (value) {
+        showSnackbarMessage(context: context, message: "Signing...");
+        return;
+      },
+      orElse: () {
+        return;
+      },
+    );
+  }
+
+  void registerAuthStateListener(AuthState state) {
+    return state.maybeMap<void>(
+      authed: (value) {
+        Navigator.pushReplacementNamed(context, HomeScreen.routeName);
+        return;
+      },
+      authError: (value) {
+        showErrorDialog(
+            context: context,
+            processId: value.failure.processId,
+            message: value.failure.message);
+        return;
+      },
+      orElse: () {
+        return;
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -22,31 +100,31 @@ class _LoginScreenState extends State<LoginScreen> {
               child: SingleChildScrollView(
                 padding: const EdgeInsets.only(bottom: 40, top: 40),
                 scrollDirection: Axis.vertical,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    title,
-                    subtitle,
-                    image,
-                    getField(labelLeft: "Email", hint: "Masukkan email anda"),
-                    const SizedBox(
-                      height: 40,
-                    ),
-                    getField(
-                        labelLeft: "Password",
-                        labelRight: "Lupa Password ?",
-                        hint: "Masukkan password anda",
-                        obSecure: true,
-                        suffix: Icon(
-                          Icons.remove_red_eye,
-                          color: AppTheme.of(context).textPrimaryColor,
-                        )),
-                    buttonLogin,
-                    didNothaveAnAccount,
-                    copyRightText
-                  ],
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      title,
+                      subtitle,
+                      image,
+                      getField(
+                          labelLeft: "Email",
+                          hint: "Masukkan email anda",
+                          focusNode: _emailFieldFocusNode,
+                          controller: _emailFieldController,
+                          validator: widget.emailValidator),
+                      const SizedBox(
+                        height: 40,
+                      ),
+                      passwordField,
+                      buttonLogin,
+                      didNothaveAnAccount,
+                      copyRightText
+                    ],
+                  ),
                 ),
               ),
             );
@@ -54,6 +132,33 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
     );
+  }
+
+  Widget get passwordField {
+    return ValueListenableBuilder<bool>(
+        valueListenable: _isPasswordShown,
+        builder: (context, v, _) {
+          return getField(
+              labelLeft: "Password",
+              labelRight: "Lupa Password ?",
+              hint: "Masukkan password anda",
+              validator: widget.passwordValidator,
+              controller: _passwordFieldController,
+              focusNode: _passwordFieldFocusNode,
+              obSecure: !v,
+              suffix: InkWell(
+                onTap: () {
+                  setState(() {
+                    _isPasswordShown.value = !_isPasswordShown.value;
+                  });
+                  return;
+                },
+                child: Icon(
+                  Icons.remove_red_eye,
+                  color: AppTheme.of(context).textPrimaryColor,
+                ),
+              ));
+        });
   }
 
   Widget _verticalPadding({required Widget child}) {
@@ -131,6 +236,7 @@ class _LoginScreenState extends State<LoginScreen> {
     FocusNode? focusNode,
     Widget? suffix,
     bool obSecure = false,
+    String? Function(String? value)? validator,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -170,6 +276,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: TextFormField(
                   maxLines: 1,
                   obscureText: obSecure,
+                  controller: controller,
+                  focusNode: focusNode,
+                  validator: validator,
                   decoration: InputDecoration(
                     contentPadding:
                         const EdgeInsets.only(left: 24, right: 24, top: 13),
@@ -188,47 +297,73 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget get buttonLogin {
     return Padding(
       padding: const EdgeInsets.only(left: 20, right: 20, top: 40, bottom: 0),
-      child: Container(
-        decoration:
-            BoxDecoration(borderRadius: BorderRadius.circular(8), boxShadow: [
-          AppTheme.of(context).buttonShadowPrimary,
-        ]),
-        child: FilledButton(
-            style: ButtonStyle(
-              fixedSize: const MaterialStatePropertyAll(Size.fromHeight(48)),
-              shadowColor: MaterialStatePropertyAll(
-                  AppTheme.of(context).buttonShadowPrimary.color),
-              padding: const MaterialStatePropertyAll(
-                  EdgeInsets.symmetric(horizontal: 16)),
-              surfaceTintColor: const MaterialStatePropertyAll(Colors.black),
-              backgroundColor:
-                  MaterialStatePropertyAll(AppTheme.of(context).primaryColor),
-              shape: MaterialStatePropertyAll(RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  side: BorderSide.none)),
-            ),
-            onPressed: () {},
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const SizedBox(
-                  width: 40,
-                ),
-                Expanded(
-                  child: Text(
-                    "Login",
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onPrimary),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              decoration:
+                  BoxDecoration(borderRadius: BorderRadius.circular(8), boxShadow: [
+                AppTheme.of(context).buttonShadowPrimary,
+              ]),
+              child: FilledButton(
+                  style: ButtonStyle(
+                    fixedSize: const MaterialStatePropertyAll(Size.fromHeight(48)),
+                    shadowColor: MaterialStatePropertyAll(
+                        AppTheme.of(context).buttonShadowPrimary.color),
+                    padding: const MaterialStatePropertyAll(
+                        EdgeInsets.symmetric(horizontal: 16)),
+                    surfaceTintColor: const MaterialStatePropertyAll(Colors.black),
+                    backgroundColor:
+                        MaterialStatePropertyAll(AppTheme.of(context).primaryColor),
+                    shape: MaterialStatePropertyAll(RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide.none)),
                   ),
-                ),
-                const SizedBox(width: 40, child: Icon(Icons.arrow_forward)),
-              ],
-            )),
+                  onPressed: onLogin,
+                  child: widget.loginState.maybeMap<Widget>(
+                    processing: (value) {
+                      return const SizedBox(
+                        width: 30,
+                        height: 30,
+                        child: CircularProgressIndicator(),
+                      );
+                    },
+                    orElse: () {
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const SizedBox(
+                            width: 40,
+                          ),
+                          Expanded(
+                            child: Text(
+                              "Login",
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: Theme.of(context).colorScheme.onPrimary),
+                            ),
+                          ),
+                          const SizedBox(width: 40, child: Icon(Icons.arrow_forward)),
+                        ],
+                      );
+                    },
+                  )),
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  void onLogin() {
+    if (_formKey.currentState?.validate() == true) {
+      widget.onLogin(_emailFieldController.text, _passwordFieldController.text);
+      return;
+    }
+
+    return;
   }
 
   Widget get didNothaveAnAccount {
@@ -240,28 +375,35 @@ class _LoginScreenState extends State<LoginScreen> {
         top: 30,
       ),
       child: Center(
-        child: SizedBox(
-          height: 30,
-          child: Text.rich(
-            TextSpan(text: "Belum punya akun ?\t", children: [
-              TextSpan(
-                  text: "Daftar Sekarang",
-                  style: style?.copyWith(
-                      fontFamily: 'Proxima-Nova',
-                      fontSize: 14,
-                      color: AppTheme.of(context).textPrimaryColor,
-                      fontWeight: FontWeight.w700)),
-            ]),
-            style: style?.copyWith(
-                fontFamily: 'Proxima-Nova',
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                color: AppTheme.of(context).textSecondayColor),
-            textAlign: TextAlign.center,
+        child: InkWell(
+          onTap: navigateToRegisterScreen,
+          child: SizedBox(
+            height: 30,
+            child: Text.rich(
+              TextSpan(text: "Belum punya akun ?\t", children: [
+                TextSpan(
+                    text: "Daftar Sekarang",
+                    style: style?.copyWith(
+                        fontFamily: 'Proxima-Nova',
+                        fontSize: 14,
+                        color: AppTheme.of(context).textPrimaryColor,
+                        fontWeight: FontWeight.w700)),
+              ]),
+              style: style?.copyWith(
+                  fontFamily: 'Proxima-Nova',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: AppTheme.of(context).textSecondayColor),
+              textAlign: TextAlign.center,
+            ),
           ),
         ),
       ),
     );
+  }
+  void navigateToRegisterScreen(){
+    Navigator.pushReplacementNamed(context, RegisterScreen.routeName);
+    return;
   }
 
   Widget get copyRightText {

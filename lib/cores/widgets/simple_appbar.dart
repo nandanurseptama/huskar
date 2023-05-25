@@ -4,6 +4,7 @@ import 'package:huskar/ui/profile_menu_screen/profile_menu_screen.dart';
 
 AppBar getSimpleAppbar({
   required BuildContext context,
+  required void Function() onLogout,
 }) {
   Widget getCartButton(BuildContext context) {
     return IconButton(
@@ -61,7 +62,7 @@ AppBar getSimpleAppbar({
         showGeneralDialog(
             context: context,
             pageBuilder: (context, animation, secondaryAnimation) {
-              return const ProfileMenuScreen();
+              return ProfileMenuScreen(onLogout: onLogout,);
             });
         return;
       },

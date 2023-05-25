@@ -1,18 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:huskar/cores/configs/theme.dart';
+import 'package:huskar/cores/utils/dialogs.dart';
+import 'package:huskar/cores/utils/register_listener_fn.dart';
 import 'package:huskar/cores/widgets/footer_widget.dart';
 import 'package:huskar/cores/widgets/simple_appbar.dart';
+import 'package:huskar/features/auth/presentation/states/auth_state.dart';
 import 'package:huskar/ui/home_screen/widgets/health_service_type_switcher.dart';
 import 'package:huskar/ui/home_screen/widgets/health_tool_product_list.dart';
 import 'package:huskar/ui/home_screen/widgets/list_healthcare_product.dart';
 import 'package:huskar/ui/home_screen/widgets/product_type_filter.dart';
+import 'package:huskar/ui/login_screen.dart';
 import 'widgets/search_field_widget.dart';
 import 'package:huskar/ui/home_screen/widgets/slider_home_screen.dart';
 import 'package:huskar/ui/home_screen/widgets/special_service_widget.dart';
 import 'package:huskar/ui/home_screen/widgets/track_inspection_widget.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final void Function() onLogout;
+  final RegisterListenerFn<AuthState> registerListener;
+  static String routeName = "/home";
+  const HomeScreen(
+      {super.key, required this.onLogout, required this.registerListener});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -20,11 +28,38 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final ValueNotifier<String> _selectedHealthCareType = ValueNotifier("Satuan");
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      widget.registerListener(authStateListener);
+    });
+  }
+
+  void authStateListener(AuthState authState) {
+    return authState.maybeMap<void>(
+      unauthed: (value) {
+        Navigator.popUntil(context, (route) => route.isFirst);
+        Navigator.pushReplacementNamed(context, LoginScreen.routeName);
+        return;
+      },
+      authError: (value) {
+        showErrorDialog(
+            context: context,
+            processId: value.failure.processId,
+            message: value.failure.message);
+        return;
+      },
+      orElse: () {
+        return;
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: getSimpleAppbar(context: context),
+      appBar: getSimpleAppbar(context: context, onLogout: widget.onLogout),
       body: SafeArea(child: LayoutBuilder(builder: (context, constraints) {
         return ConstrainedBox(
           constraints: constraints,

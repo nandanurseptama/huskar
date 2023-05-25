@@ -9,7 +9,8 @@ import 'package:huskar/ui/profile_menu_screen/widgets/profile_menu_list.dart';
 import 'widgets/close_button.dart' as cb;
 
 class ProfileMenuScreen extends StatefulWidget {
-  const ProfileMenuScreen({super.key});
+  final void Function() onLogout;
+  const ProfileMenuScreen({super.key, required this.onLogout});
 
   @override
   State<ProfileMenuScreen> createState() => _ProfileMenuScreenState();
@@ -113,18 +114,14 @@ class _ProfileMenuScreenState extends State<ProfileMenuScreen> {
   void navigateToProfileEditScreen(String value) {
     // pop this screen
     Navigator.pop(context);
-    Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-            builder: (_) => ProfileEditScreen(
-                  initialSubmenu: value,
-                )));
+    Navigator.pushReplacementNamed(context, ProfileEditScreen.routeName,
+        arguments: {"initialSubMenu": value});
     return;
   }
 
   Widget getLogoutButton() {
     return FilledButton(
-      onPressed: () {},
+      onPressed: onLogout,
       style: const ButtonStyle(
           backgroundColor: MaterialStatePropertyAll(Color(0xffEB0004)),
           fixedSize: MaterialStatePropertyAll(
@@ -148,6 +145,11 @@ class _ProfileMenuScreenState extends State<ProfileMenuScreen> {
             ),
       ),
     );
+  }
+
+  void onLogout() {
+    widget.onLogout();
+    return;
   }
 
   Widget getProfileInfoWidget(BoxConstraints constraints) {

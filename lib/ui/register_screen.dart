@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:huskar/cores/configs/theme.dart';
 import 'package:huskar/cores/constants/assets_path.dart';
+import 'package:huskar/ui/login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
+  static String routeName = "/auth/register";
   const RegisterScreen({super.key});
 
   @override
@@ -300,28 +302,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
         top: 30,
       ),
       child: Center(
-        child: SizedBox(
-          height: 30,
-          child: Text.rich(
-            TextSpan(text: "Belum punya akun ?\t", children: [
-              TextSpan(
-                  text: "Daftar Sekarang",
-                  style: style?.copyWith(
-                      fontFamily: 'Proxima-Nova',
-                      fontSize: 14,
-                      color: AppTheme.of(context).textPrimaryColor,
-                      fontWeight: FontWeight.w700)),
-            ]),
-            style: style?.copyWith(
-                fontFamily: 'Proxima-Nova',
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                color: AppTheme.of(context).textSecondayColor),
-            textAlign: TextAlign.center,
+        child: InkWell(
+          onTap: navigateToLoginScreen,
+          child: SizedBox(
+            height: 30,
+            child: Text.rich(
+              TextSpan(text: "Belum punya akun ?\t", children: [
+                TextSpan(
+                    text: "Daftar Sekarang",
+                    style: style?.copyWith(
+                        fontFamily: 'Proxima-Nova',
+                        fontSize: 14,
+                        color: AppTheme.of(context).textPrimaryColor,
+                        fontWeight: FontWeight.w700)),
+              ]),
+              style: style?.copyWith(
+                  fontFamily: 'Proxima-Nova',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: AppTheme.of(context).textSecondayColor),
+              textAlign: TextAlign.center,
+            ),
           ),
         ),
       ),
     );
+  }
+  void navigateToLoginScreen(){
+    Navigator.pushReplacementNamed(context, LoginScreen.routeName);
+    return;
   }
 
   Widget get copyRightText {
