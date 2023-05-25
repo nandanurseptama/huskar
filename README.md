@@ -6,8 +6,8 @@
 - Java Version OpenJDK Runtime Environment v11.0.12+0-b1504.28-7817840
 
 Tested on :
+
 - Android 12
 - IOS 14
 
-
-Download APK <a src="https://drive.google.com/file/d/17D1924sWgyrbCyGthkdbwkuOtg7poIQs/view?usp=share_link">Here</a>
+Download APK <a href="https://drive.google.com/file/d/17D1924sWgyrbCyGthkdbwkuOtg7poIQs/view?usp=share_link">Here</a>
